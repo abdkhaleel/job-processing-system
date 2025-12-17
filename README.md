@@ -14,6 +14,7 @@ The system is built to handle failures gracefully ("Self-Healing"), ensure data 
 
 The system follows the **Producer-Consumer** pattern with a **Dead Letter Queue (DLQ)** strategy for fault tolerance.
 
+```mermaid
 graph LR
     User[Client] -->|POST /order| API[Producer Service]
     API -->|SendMessage| SQS[Main Queue]
@@ -26,6 +27,7 @@ graph LR
         CW -.->|Alarm Trigger| SNS[SNS Alert]
     end
 
+```
 
 ### Key Components
 *   **Producer API (Node.js/Express):** Validates requests and offloads them to SQS immediately (Fire-and-Forget).
