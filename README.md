@@ -14,19 +14,18 @@ The system is built to handle failures gracefully ("Self-Healing"), ensure data 
 
 The system follows the **Producer-Consumer** pattern with a **Dead Letter Queue (DLQ)** strategy for fault tolerance.
 
-```mermaid
 graph LR
     User[Client] -->|POST /order| API[Producer Service]
     API -->|SendMessage| SQS[Main Queue]
     SQS -->|Polls| Worker[Consumer Worker]
-    Worker -->|Write Item| DB[(DynamoDB)]
-    
-    subgraph Reliability & Monitoring
+    Worker -->|Write Item| DB[DynamoDB]
+
+    subgraph "Reliability and Monitoring"
         SQS -.->|Fail > 3x| DLQ[Dead Letter Queue]
         Worker -.->|Emit Metrics| CW[CloudWatch]
         CW -.->|Alarm Trigger| SNS[SNS Alert]
     end
-```
+
 
 ### Key Components
 *   **Producer API (Node.js/Express):** Validates requests and offloads them to SQS immediately (Fire-and-Forget).
