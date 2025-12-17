@@ -2,6 +2,7 @@ require('dotenv').config();
 const { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } = require('@aws-sdk/client-sqs');
 const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 const { marshall } = require('@aws-sdk/util-dynamodb');
+const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
 const TABLE_NAME = process.env.DYNAMODB_TABLE;
@@ -13,8 +14,34 @@ const clientConfig = {
   credentials: { accessKeyId: 'test', secretAccessKey: 'test' }
 };
 
+const cw = new CloudWatchClient(clientConfig);
 const sqs = new SQSClient(clientConfig);
 const db = new DynamoDBClient(clientConfig);
+
+const sendMetric = async (metricName, value = 1) => {
+  try {
+    const params = {
+      Namespace: 'SRE/OrderSystem',
+      MetricData: [
+        {
+          MetricName: metricName,
+          Dimensions: [
+            {
+              Name: 'Environment',
+              Value: 'local'
+            }
+          ],
+          Unit: 'Count',
+          Value: value
+        }
+      ]
+    };
+    await cw.send(new PutMetricDataCommand(params));
+    console.log(`[Metric] Sent ${metricName} to CloudWatch`);
+  } catch (err) {
+    console.error('Failed to send metric:', err);
+  }
+};
 
 const pollQueue = async () => {
   console.log('Waiting for messages...');
@@ -66,6 +93,8 @@ const processMessage = async (message) => {
     await db.send(new PutItemCommand(params));
     console.log(`Order ${orderId} saved to DB.`);
 
+    await sendMetric('OrdersProcessed', 1);
+
     await sqs.send(new DeleteMessageCommand({
       QueueUrl: QUEUE_URL,
       ReceiptHandle: message.ReceiptHandle
@@ -80,6 +109,7 @@ const processMessage = async (message) => {
         ReceiptHandle: message.ReceiptHandle
       }));
     } else {
+      await sendMetric('OrderFailures', 1);
       console.error(`Processing failed for ${orderId}:`, err.message);
       console.log('Message will be retried automatically by SQS...');
     }
