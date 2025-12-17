@@ -45,9 +45,12 @@ const processMessage = async (message) => {
   const body = JSON.parse(message.Body);
   const { orderId, item, quantity } = body;
 
-  console.log(`Processing Order: ${orderId}`);
+  console.log(`Processing Order: ${orderId} [Item: ${item}]`);
 
   try {
+    if (item === 'POISON') {
+      throw new Error('SIMULATED CRASH! This order causes a bug.');
+    }
     const params = {
       TableName: TABLE_NAME,
       Item: marshall({
@@ -77,7 +80,8 @@ const processMessage = async (message) => {
         ReceiptHandle: message.ReceiptHandle
       }));
     } else {
-      console.error(`Processing failed for ${orderId}:`, err);
+      console.error(`Processing failed for ${orderId}:`, err.message);
+      console.log('Message will be retried automatically by SQS...');
     }
   }
 };
