@@ -1,0 +1,30 @@
+# --- Node.js ---
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+coverage/
+
+# --- Terraform ---
+# The .terraform directory contains the downloaded providers (hundreds of MBs)
+.terraform/
+
+# The State file contains the "Current Reality" of your infra.
+# In a team, this goes to S3. Locally, we NEVER commit it (concurrency/security issues).
+*.tfstate
+*.tfstate.backup
+
+# Variable files usually contain secrets
+*.tfvars
+
+# Lock file (Optional to ignore, but often ignored in solo local setups)
+.terraform.lock.hcl
+
+# --- Environment & Secrets ---
+# NEVER commit .env files. They contain API keys.
+.env
+
+# --- OS & Editor ---
+.DS_Store
+.vscode/
+.idea/
